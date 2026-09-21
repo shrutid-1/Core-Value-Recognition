@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { CheckSquare, MessageSquare, XCircle, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import type { NominationWithDetails } from '@/types'
+import { fetchNominationsWithDetails } from '@/lib/db-queries'
+import type { NominationWithJoins } from '@/lib/db-queries'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CardSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -10,7 +11,7 @@ import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'
 import { CoreValueBadge } from '@/components/shared/CoreValueBadge'
 import { formatIST } from '@/lib/date-utils'
 
-type ActionType = 'approve' | 'reject' | 'clarify'
+type ActionType = 'approve' | 'reject' | 'request_clarification'
 
 function Corners() {
   return (
@@ -23,10 +24,10 @@ function Corners() {
 
 export default function PendingApprovalsPage() {
   const { employee } = useAuth()
-  const [nominations, setNominations] = useState<NominationWithDetails[]>([])
+  const [nominations, setNominations] = useState<NominationWithJoins[]>([])
   const [loading, setLoading]         = useState(true)
   const [expanded, setExpanded]       = useState<string | null>(null)
-  const [actionModal, setActionModal] = useState<{ type: ActionType; nomination: NominationWithDetails } | null>(null)
+  const [actionModal, setActionModal] = useState<{ type: ActionType; nomination: NominationWithJoins } | null>(null)
   const [actionText, setActionText]   = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [actionError, setActionError]     = useState<string | null>(null)
@@ -34,21 +35,18 @@ export default function PendingApprovalsPage() {
   const fetchPending = useCallback(async () => {
     if (!employee) return
     setLoading(true)
-    const { data } = await supabase
-      .from('nominations')
-      .select(`
-        *,
-        nominator:nominator_id (id, full_name, avatar_url),
-        nominee:nominee_id (id, full_name, avatar_url),
-        core_value:core_value_id (id, name, slug, accent_color, icon),
-        behaviour:behaviour_id (id, name),
-        project:project_id (id, name)
-      `)
-      .eq('assigned_approver_id', employee.id)
-      .eq('status', 'pending')
-      .order('submitted_at', { ascending: true })
-    setNominations((data as unknown as NominationWithDetails[]) ?? [])
-    setLoading(false)
+    try {
+      const data = await fetchNominationsWithDetails({
+        status: 'pending',
+        assignedApproverId: employee.id,
+      })
+      setNominations(data)
+    } catch (err) {
+      console.error('Failed to fetch pending nominations:', err)
+      setNominations([])
+    } finally {
+      setLoading(false)
+    }
   }, [employee])
 
   useEffect(() => { fetchPending() }, [fetchPending])
@@ -62,7 +60,7 @@ export default function PendingApprovalsPage() {
   const handleAction = async () => {
     if (!actionModal || !employee) return
     const { type, nomination } = actionModal
-    if ((type === 'reject' || type === 'clarify') && !actionText.trim()) {
+    if ((type === 'reject' || type === 'request_clarification') && !actionText.trim()) {
       setActionError(type === 'reject' ? 'Please provide a reason for rejection.' : 'Please describe what clarification you need.')
       return
     }
@@ -74,10 +72,15 @@ export default function PendingApprovalsPage() {
         action: type,
         approver_id: employee.id,
         reason: type === 'reject' ? actionText : undefined,
-        clarification_note: type === 'clarify' ? actionText : undefined,
+        clarification_note: type === 'request_clarification' ? actionText : undefined,
       },
     })
-    if (error) { setActionError('Something went wrong. Please try again.'); setActionLoading(false); return }
+    if (error) { 
+      const errorMsg = error?.message || 'Something went wrong. Please try again.'
+      setActionError(errorMsg)
+      setActionLoading(false)
+      return 
+    }
     setActionModal(null)
     setActionText('')
     setExpanded(null)
@@ -206,7 +209,7 @@ export default function PendingApprovalsPage() {
                         <i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" />
                         <CheckSquare size={13} aria-hidden="true" /> Approve
                       </button>
-                      <button className="vs-btn" onClick={() => openAction('clarify', n)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <button className="vs-btn" onClick={() => openAction('request_clarification', n)} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <MessageSquare size={13} aria-hidden="true" /> Request Clarification
                       </button>
                       <button
@@ -245,12 +248,12 @@ export default function PendingApprovalsPage() {
               <h2 id="action-modal-title" className="font-condensed" style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text)' }}>
                 {actionModal.type === 'approve' && 'Approve recognition'}
                 {actionModal.type === 'reject'  && 'Reject recognition'}
-                {actionModal.type === 'clarify' && 'Request clarification'}
+                {actionModal.type === 'request_clarification' && 'Request clarification'}
               </h2>
               <p style={{ fontSize: 13, color: 'var(--color-neutral-600)', marginTop: 4, lineHeight: 1.5 }}>
                 {actionModal.type === 'approve' && 'This recognition will be published and the employee notified.'}
                 {actionModal.type === 'reject'  && 'Provide a reason. The rejection reason will not be visible to the nominee.'}
-                {actionModal.type === 'clarify' && 'Describe what additional information would help you evaluate this.'}
+                {actionModal.type === 'request_clarification' && 'Describe what additional information would help you evaluate this.'}
               </p>
             </div>
 

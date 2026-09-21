@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Edit2, ClipboardList, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Behaviour, CoreValue } from '@/types'
+import { fetchBehavioursWithCoreValues } from '@/lib/db-queries'
+import type { Behaviour, CoreValue, BehaviourWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
@@ -9,9 +10,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { CoreValueBadge } from '@/components/shared/CoreValueBadge'
 import type { CoreValueSlug } from '@/lib/constants'
 
-interface BehaviourRow extends Behaviour {
-  core_values: { name: string; slug: string } | null
-}
+type BehaviourRow = BehaviourWithJoins
 
 function FormDialog({ open, onClose, title, children, onSubmit, saving, submitLabel }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; onSubmit: () => void; saving: boolean; submitLabel: string }) {
   if (!open) return null
@@ -59,9 +58,15 @@ export default function BehavioursPage() {
 
   const fetchBehaviours = async () => {
     setLoading(true)
-    const { data } = await supabase.from('behaviours').select('*, core_values:core_value_id(name, slug)').order('display_order')
-    setBehaviours((data as unknown as BehaviourRow[]) ?? [])
-    setLoading(false)
+    try {
+      const data = await fetchBehavioursWithCoreValues()
+      setBehaviours(data)
+    } catch (err) {
+      console.error('Failed to fetch behaviours:', err)
+      setBehaviours([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {

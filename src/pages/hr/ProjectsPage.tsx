@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Archive, Edit2, FolderKanban, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Project } from '@/types'
+import { fetchProjectsWithManager, fetchManagers } from '@/lib/db-queries'
+import type { Project, ProjectWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
 
-interface ProjectRow extends Project {
-  manager: { full_name: string } | null
-}
+type ProjectRow = ProjectWithJoins
 
 function FormDialog({ open, onClose, title, children, onSubmit, saving, submitLabel }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; onSubmit: () => void; saving: boolean; submitLabel: string }) {
   if (!open) return null
@@ -56,14 +55,23 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     setLoading(true)
-    const { data } = await supabase.from('projects').select('*, manager:manager_id(full_name)').order('name')
-    setProjects((data as unknown as ProjectRow[]) ?? [])
-    setLoading(false)
+    try {
+      const data = await fetchProjectsWithManager()
+      setProjects(data)
+    } catch (err) {
+      console.error('Failed to fetch projects:', err)
+      setProjects([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
     fetchProjects()
-    supabase.from('employees').select('id, full_name').in('role', ['manager', 'hr_admin']).eq('is_active', true).order('full_name').then(({ data }) => setManagers(data ?? []))
+    fetchManagers().then(setManagers).catch(err => {
+      console.error('Failed to fetch managers:', err)
+      setManagers([])
+    })
   }, [])
 
   const openAdd  = () => { setEditing(null); setForm({ name: '', description: '', project_code: '', manager_id: '' }); setShowForm(true) }

@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { Plus, Search, UserCheck, UserX, Edit2, Users, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Employee, Department } from '@/types'
+import { fetchEmployeesWithDetails, fetchDepartments, fetchManagers } from '@/lib/db-queries'
+import type { Employee, Department, EmployeeWithDept } from '@/types'
+import type { EmployeeWithJoins } from '@/lib/db-queries'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -23,10 +25,7 @@ const employeeSchema = z.object({
 })
 type EmployeeForm = z.infer<typeof employeeSchema>
 
-interface EmployeeRow extends Employee {
-  department: { name: string } | null
-  manager: { full_name: string } | null
-}
+type EmployeeRow = EmployeeWithJoins
 
 const SEL = 'vs-input w-full'
 
@@ -98,15 +97,15 @@ export default function EmployeesPage() {
 
   const fetchEmployees = useCallback(async (q = '') => {
     setLoading(true)
-    let builder = supabase
-      .from('employees')
-      .select('*, department:department_id(name), manager:manager_id(full_name)')
-      .order('full_name')
-      .limit(50)
-    if (q.length >= 2) builder = builder.or(`full_name.ilike.%${q}%,email.ilike.%${q}%,employee_id.ilike.%${q}%`)
-    const { data } = await builder
-    setEmployees((data as unknown as EmployeeRow[]) ?? [])
-    setLoading(false)
+    try {
+      const data = await fetchEmployeesWithDetails(q)
+      setEmployees(data)
+    } catch (err) {
+      console.error('Failed to fetch employees:', err)
+      setEmployees([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -114,9 +113,25 @@ export default function EmployeesPage() {
     return () => clearTimeout(t)
   }, [query, fetchEmployees])
 
+  // Load employees on page mount
   useEffect(() => {
-    supabase.from('departments').select('*').eq('is_active', true).order('name').then(({ data }) => setDepartments(data ?? []))
-    supabase.from('employees').select('id, full_name').in('role', ['manager', 'hr_admin']).eq('is_active', true).order('full_name').then(({ data }) => setManagers(data ?? []))
+    fetchEmployees('')
+  }, [fetchEmployees])
+
+  useEffect(() => {
+    const loadDepartmentsAndManagers = async () => {
+      try {
+        const [depts, mgrs] = await Promise.all([
+          fetchDepartments(),
+          fetchManagers(),
+        ])
+        setDepartments(depts)
+        setManagers(mgrs as Employee[])
+      } catch (err) {
+        console.error('Failed to load departments/managers:', err)
+      }
+    }
+    loadDepartmentsAndManagers()
   }, [])
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<EmployeeForm>({

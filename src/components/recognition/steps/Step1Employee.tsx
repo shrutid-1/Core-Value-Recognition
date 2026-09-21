@@ -21,7 +21,7 @@ export function Step1Employee({ selected, onSelect, currentUserId }: Step1Employ
   const [searchError, setSearchError] = useState<string | null>(null)
 
   const search = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
+    if (q.trim().length < 1) {
       setResults([])
       return
     }
@@ -129,8 +129,8 @@ export function Step1Employee({ selected, onSelect, currentUserId }: Step1Employ
         </ul>
       )}
 
-      {query.length < 2 && (
-        <p className="text-xs text-text-muted text-center">Type at least 2 characters to search</p>
+      {query.length < 1 && (
+        <p className="text-xs text-text-muted text-center">Type at least 1 character to search</p>
       )}
     </div>
   )

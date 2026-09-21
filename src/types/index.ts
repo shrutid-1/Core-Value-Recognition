@@ -1,7 +1,24 @@
-import type { Database, UserRole, NominationStatus, RecognitionSource, PeriodType } from '@/lib/supabase-types'
+import type {
+  Database,
+  UserRole,
+  NominationStatus,
+  RecognitionSource,
+  PeriodType,
+  NotificationType,
+} from '@/lib/supabase-types'
 
 // Re-export base types
 export type { UserRole, NominationStatus, RecognitionSource, PeriodType, NotificationType }
+
+// Re-export typed query result types
+export type {
+  EmployeeWithJoins,
+  NominationWithJoins,
+  BehaviourWithJoins,
+  ScenarioWithJoins,
+  ProjectWithJoins,
+  CoreValueWithChildren,
+} from '@/lib/db-queries'
 
 // === Row types (convenience aliases) ===
 export type Department    = Database['public']['Tables']['departments']['Row']

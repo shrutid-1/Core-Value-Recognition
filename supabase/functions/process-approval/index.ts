@@ -1,16 +1,40 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Allowed origins for CORS - supports both development and production
+const allowedOrigins = [
+  'http://localhost:5174',      // Development (Vite default port)
+  'http://localhost:3000',      // Development (alternative)
+  'http://localhost:8080',      // Development (alternative)
+]
+
+// Check if SUPABASE_FRONTEND_URL is set for production
+const prodUrl = Deno.env.get('SUPABASE_FRONTEND_URL')
+if (prodUrl) {
+  allowedOrigins.push(prodUrl)
+}
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const isAllowed = origin && allowedOrigins.includes(origin)
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'http://localhost:5174',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  }
 }
 
 type Action = 'approve' | 'reject' | 'request_clarification'
 
 serve(async (req) => {
+  const origin = req.headers.get('origin')
+  const corsHeaders = getCorsHeaders(origin)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
@@ -216,8 +240,13 @@ serve(async (req) => {
     })
 
   } catch (err) {
-    console.error('process-approval error:', err)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    const errorStack = err instanceof Error ? err.stack : ''
+    console.error('process-approval error:', errorMessage)
+    if (errorStack) console.error('Stack:', errorStack)
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error'
+    }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
   }
@@ -311,7 +340,7 @@ async function calculateBadges(
     period_start: yearStart,
     period_end: yearEnd,
     recognition_count: count,
-    unique_recognizer_count: unique ?? 0,
+    unique_recognizer_count: uniqueNominators ?? 0,
     badge_level: finalLevel,
     last_updated: new Date().toISOString(),
   }, { onConflict: 'employee_id,core_value_id,period_type,period_start' })

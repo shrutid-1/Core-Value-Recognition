@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Award, Send } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { fetchNominationsWithDetails } from '@/lib/db-queries'
 import { useAuth } from '@/context/AuthContext'
-import type { NominationWithDetails } from '@/types'
+import type { NominationWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CardSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -26,36 +27,39 @@ export default function MyRecognitionsPage() {
   const { employee } = useAuth()
   const navigate = useNavigate()
   const [tab, setTab]       = useState<Tab>('received')
-  const [items, setItems]   = useState<NominationWithDetails[]>([])
+  const [items, setItems]   = useState<NominationWithJoins[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!employee) return
     setLoading(true)
 
-    const field = tab === 'received' ? 'nominee_id' : 'nominator_id'
     const statusFilter = tab === 'received'
       ? ['approved']
       : ['approved', 'pending', 'clarification_requested', 'rejected']
 
-    supabase
-      .from('nominations')
-      .select(`
-        *,
-        nominator:nominator_id (id, full_name, avatar_url),
-        nominee:nominee_id (id, full_name, avatar_url),
-        core_value:core_value_id (id, name, slug, accent_color, icon),
-        behaviour:behaviour_id (id, name),
-        project:project_id (id, name)
-      `)
-      .eq(field, employee.id)
-      .in('status', statusFilter)
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .then(({ data }) => {
-        setItems((data as unknown as NominationWithDetails[]) ?? [])
+    const getItems = async () => {
+      try {
+        // Fetch using helper, then filter by nominee or nominator
+        const data = await fetchNominationsWithDetails({
+          status: statusFilter,
+          limit: 50,
+        })
+        
+        const filtered = tab === 'received'
+          ? data.filter(n => n.nominee_id === employee.id)
+          : data.filter(n => n.nominator_id === employee.id)
+        
+        setItems(filtered)
+      } catch (err) {
+        console.error('Failed to fetch recognitions:', err)
+        setItems([])
+      } finally {
         setLoading(false)
-      })
+      }
+    }
+
+    getItems()
   }, [employee, tab])
 
   return (

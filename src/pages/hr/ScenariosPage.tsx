@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Edit2, MessageSquare, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Scenario, CoreValue, Behaviour } from '@/types'
+import { fetchScenariosWithRelations } from '@/lib/db-queries'
+import type { Scenario, CoreValue, Behaviour, ScenarioWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
 
-interface ScenarioRow extends Scenario {
-  behaviours: { name: string } | null
-  core_values: { name: string } | null
-}
+type ScenarioRow = ScenarioWithJoins
 
 function FormDialog({ open, onClose, title, children, onSubmit, saving, submitLabel }: { open: boolean; onClose: () => void; title: string; children: React.ReactNode; onSubmit: () => void; saving: boolean; submitLabel: string }) {
   if (!open) return null
@@ -62,9 +60,15 @@ export default function ScenariosPage() {
 
   const fetchScenarios = async () => {
     setLoading(true)
-    const { data } = await supabase.from('scenarios').select('*, behaviours:behaviour_id(name), core_values:core_value_id(name)').order('display_order')
-    setScenarios((data as unknown as ScenarioRow[]) ?? [])
-    setLoading(false)
+    try {
+      const data = await fetchScenariosWithRelations()
+      setScenarios(data)
+    } catch (err) {
+      console.error('Failed to fetch scenarios:', err)
+      setScenarios([])
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
