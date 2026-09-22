@@ -29,3 +29,33 @@ Thumbs.db
 # Supabase
 .supabase
 supabase/.temp
+# Temporary build/debug artifacts (development troubleshooting only)
+build-check.log
+build-errors-complete.log
+build-final-check.txt
+build-typescript.log
+build.bat
+capture-build-errors.cjs
+check-build.mjs
+check-build2.mjs
+check-tsc.js
+check-tsc.mjs
+do-tsc.cjs
+fix-selects.mjs
+fresh-tsc-output.txt
+fresh-tsc.mjs
+npm-build-output.log
+run-build-final.mjs
+run-build-to-file.cjs
+run-build.cjs
+run-build.js
+run-full-build-final.mjs
+run-tsc-check-final.mjs
+run-tsc-simple.mjs
+run-type-check.mjs
+tsc-check.txt
+tsc-errors.txt
+tsc-final-check.txt
+tsc-final.txt
+tsc-output.txt
+build-output.txt

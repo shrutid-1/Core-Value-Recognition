@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Zap } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -43,22 +43,22 @@ export default function TeamBadgesPage() {
     if (!employee) return
     supabase
       .from('employees')
-      .select('id, full_name, avatar_url')
+      .select('*')
       .eq('manager_id', employee.id)
       .eq('is_active', true)
       .then(async ({ data: team }) => {
         if (!team || team.length === 0) { setLoading(false); return }
-        const ids = team.map(e => e.id)
+        const ids = (team as unknown as { id: string }[]).map(e => e.id)
         const { data: badges } = await supabase
           .from('employee_value_badges')
-          .select('employee_id, badge_level, recognition_count, core_values:core_value_id(name, slug)')
+          .select('employee_id, badge_level, recognition_count, core_value_id, core_values:core_value_id(name, slug)')
           .in('employee_id', ids)
           .eq('period_type', 'annual')
           .not('badge_level', 'is', null)
           .order('badge_level', { ascending: false })
 
-        const result: TeamBadgeRow[] = (badges ?? []).map(b => {
-          const emp = team.find(e => e.id === b.employee_id)
+        const result: TeamBadgeRow[] = (badges as unknown as { employee_id: string; badge_level: number | null; recognition_count: number; core_values: { name: string; slug: string } | null }[] | null ?? []).map(b => {
+          const emp = (team as unknown as { id: string; full_name: string; avatar_url: string | null }[]).find(e => e.id === b.employee_id)
           const cv  = b.core_values as { name: string; slug: string } | null
           return {
             employee_id:       b.employee_id,

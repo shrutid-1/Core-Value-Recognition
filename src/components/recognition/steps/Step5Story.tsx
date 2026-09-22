@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -40,7 +40,7 @@ export function Step5Story({ whatHappened, whatImpact, projectId, onUpdate, onNe
   useEffect(() => {
     supabase
       .from('projects')
-      .select('id, name')
+      .select('*')
       .eq('is_active', true)
       .order('name')
       .then(({ data }) => {

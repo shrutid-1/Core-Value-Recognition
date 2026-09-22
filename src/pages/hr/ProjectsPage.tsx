@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Archive, Edit2, FolderKanban, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { createProject, updateProject, archiveProject } from '@/lib/db-queries'
 import { fetchProjectsWithManager, fetchManagers } from '@/lib/db-queries'
-import type { Project, ProjectWithJoins } from '@/types'
+import type { ProjectWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
@@ -80,15 +80,15 @@ export default function ProjectsPage() {
   const save = async () => {
     setSaving(true)
     if (editing) {
-      await supabase.from('projects').update({ name: form.name, description: form.description || null, project_code: form.project_code || null, manager_id: form.manager_id || null }).eq('id', editing.id)
+      await updateProject(editing.id, { name: form.name, description: form.description || null, project_code: form.project_code || null, manager_id: form.manager_id || null })
     } else {
-      await supabase.from('projects').insert({ name: form.name, description: form.description || null, project_code: form.project_code || null, manager_id: form.manager_id || null, is_active: true })
+      await createProject({ name: form.name, description: form.description || null, project_code: form.project_code || null, manager_id: form.manager_id || null })
     }
     setShowForm(false); setSaving(false); fetchProjects()
   }
 
   const archive = async (p: ProjectRow) => {
-    await supabase.from('projects').update({ is_active: false, archived_at: new Date().toISOString() }).eq('id', p.id)
+    await archiveProject(p.id)
     fetchProjects()
   }
 

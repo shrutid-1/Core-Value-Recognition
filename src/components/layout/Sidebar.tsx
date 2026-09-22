@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Plus, Rss, Award, Star, Users, FolderKanban, Building2,
   BarChart3, FileText, Settings, ClipboardList, Gift, Shield,
-  CheckSquare, TrendingUp, Zap, BookOpen, X, ChevronRight,
+  CheckSquare, TrendingUp, Zap, BookOpen, X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROUTES } from '@/lib/constants'
@@ -165,13 +164,6 @@ function ViewSwitcher() {
 }
 
 function SidebarContent({ groups }: SidebarContentProps) {
-  const { employee } = useAuth()
-
-  // Get initials for brand / user display
-  const initials = employee?.full_name
-    ? employee.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : 'VS'
-
   return (
     <div
       className="flex flex-col h-full"

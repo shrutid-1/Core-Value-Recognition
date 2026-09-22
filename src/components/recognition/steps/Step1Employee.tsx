@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Search, UserX } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Employee } from '@/types'
-import { Input } from '@/components/ui/input'
 import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'
 import { SkeletonLoader } from '@/components/shared/SkeletonLoader'
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
@@ -30,7 +29,7 @@ export function Step1Employee({ selected, onSelect, currentUserId }: Step1Employ
 
     const { data, error } = await supabase
       .from('employees')
-      .select('id, employee_id, full_name, email, role, avatar_url, department_id, manager_id, is_active, auth_user_id, joined_at, created_at, updated_at')
+      .select('*')
       .eq('is_active', true)
       .or(`full_name.ilike.%${q}%,employee_id.ilike.%${q}%,email.ilike.%${q}%`)
       .neq('id', currentUserId ?? '')

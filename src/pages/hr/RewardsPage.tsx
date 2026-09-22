@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Edit2, Gift, X } from 'lucide-react'
+import { createReward } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import type { Reward } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -67,9 +68,9 @@ export default function RewardsPage() {
   const save = async () => {
     setSaving(true)
     if (editing) {
-      await supabase.from('rewards').update({ name: form.name, description: form.description || null, frequency: form.frequency || null, eligibility_criteria: form.eligibility_criteria || null, value_description: form.value_description || null, requires_approval: form.requires_approval }).eq('id', editing.id)
+      await ((supabase.from('rewards') as unknown as any).update({ name: form.name, description: form.description || null, frequency: form.frequency || null, eligibility_criteria: form.eligibility_criteria || null, value_description: form.value_description || null, requires_approval: form.requires_approval })).eq('id', editing.id)
     } else {
-      await supabase.from('rewards').insert({ name: form.name, description: form.description || null, frequency: form.frequency || null, eligibility_criteria: form.eligibility_criteria || null, value_description: form.value_description || null, requires_approval: form.requires_approval, is_active: true })
+      await createReward({ name: form.name, description: form.description || null, frequency: form.frequency || null, eligibility_criteria: form.eligibility_criteria || null, value_description: form.value_description || null, requires_approval: form.requires_approval })
     }
     setShowForm(false); setSaving(false); fetchRewards()
   }

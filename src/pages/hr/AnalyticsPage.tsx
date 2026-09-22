@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MetricCardSkeleton } from '@/components/shared/SkeletonLoader'
@@ -64,13 +64,13 @@ export default function AnalyticsPage() {
       } else {
         const b = currentAnnualPeriod(); start = b.start; end = b.end
       }
-      const { data: coreValues } = await supabase.from('core_values').select('id, name, slug').eq('is_active', true).order('display_order')
-      const cvList = coreValues ?? []
+      const { data: coreValues } = await supabase.from('core_values').select('*').eq('is_active', true).order('display_order')
+      const cvList = (coreValues as unknown as { id: string; name: string; slug: string }[] | null) ?? []
       const results: CVLeaders[] = []
       for (const cv of cvList) {
-        const { data: noms } = await supabase.from('nominations').select('nominee_id, nominator_id').eq('core_value_id', cv.id).eq('status', 'approved').gte('approved_at', `${start}T00:00:00Z`).lte('approved_at', `${end}T23:59:59Z`)
+        const { data: noms } = await supabase.from('nominations').select('*').eq('core_value_id', cv.id).eq('status', 'approved').gte('approved_at', `${start}T00:00:00Z`).lte('approved_at', `${end}T23:59:59Z`)
         const empMap: Record<string, { count: number; uniqueNominators: Set<string> }> = {}
-        for (const n of noms ?? []) {
+        for (const n of (noms as unknown as { nominee_id: string; nominator_id: string }[] | null) ?? []) {
           if (!empMap[n.nominee_id]) empMap[n.nominee_id] = { count: 0, uniqueNominators: new Set() }
           empMap[n.nominee_id].count++
           empMap[n.nominee_id].uniqueNominators.add(n.nominator_id)
@@ -82,11 +82,11 @@ export default function AnalyticsPage() {
         const topEntries = sorted.filter(([, v]) => v.count === topCount && v.uniqueNominators.size === topUnique)
         const isJoint = topEntries.length > 1
         const empIds = topEntries.map(([id]) => id)
-        const { data: empData } = await supabase.from('employees').select('id, full_name, avatar_url').in('id', empIds)
-        const { data: badgeData } = await supabase.from('employee_value_badges').select('employee_id, badge_level').in('employee_id', empIds).eq('core_value_id', cv.id).eq('period_type', 'annual')
-        const badgeMap = new Map((badgeData ?? []).map(b => [b.employee_id, b.badge_level]))
+        const { data: empData } = await supabase.from('employees').select('*').in('id', empIds)
+        const { data: badgeData } = await supabase.from('employee_value_badges').select('*').in('employee_id', empIds).eq('core_value_id', cv.id).eq('period_type', 'annual')
+        const badgeMap = new Map((badgeData as unknown as { employee_id: string; badge_level: number | null }[] | null ?? []).map(b => [b.employee_id, b.badge_level]))
         const leaders: Leader[] = topEntries.map(([id, v]) => {
-          const emp = (empData ?? []).find(e => e.id === id)
+          const emp = (empData as unknown as { id: string; full_name: string; avatar_url: string | null }[] | null ?? []).find(e => e.id === id)
           return { employee_id: id, employee_name: emp?.full_name ?? id, avatar_url: emp?.avatar_url ?? null, recognition_count: v.count, unique_recognizer_count: v.uniqueNominators.size, badge_level: badgeMap.get(id) ?? null, is_joint: isJoint }
         })
         results.push({ core_value_id: cv.id, core_value_name: cv.name, slug: cv.slug, leaders })

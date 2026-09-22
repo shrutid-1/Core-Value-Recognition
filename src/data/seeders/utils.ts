@@ -1,5 +1,5 @@
 import { v5 as uuidv5 } from 'uuid'
-import { formatErrorForDisplay, formatErrorForLogging } from './errorFormatter.js'
+import { formatErrorForDisplay } from './errorFormatter.js'
 
 /**
  * ValueSpot UUID v5 namespace for deterministic UUID generation
@@ -71,9 +71,8 @@ export function parseRelativeDate(dateStr: string): Date {
 
   if (dateStr === 'Today' || dateStr.startsWith('Today,')) {
     if (dateStr.startsWith('Today,')) {
-      const [time] = dateStr.split(',')[1]?.trim().split(':') || ['00', '00']
-      const [hours, minutes] = dateStr
-        .split(',')[1]
+      const [, timeStr] = dateStr.split(',')
+      const [hours, minutes] = timeStr
         ?.trim()
         .split(':')
         .map((x) => parseInt(x)) || [0, 0]

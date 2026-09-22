@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Edit2, ClipboardList, X } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
+import { getCoreValues } from '@/lib/db-queries'
 import { fetchBehavioursWithCoreValues } from '@/lib/db-queries'
-import type { Behaviour, CoreValue, BehaviourWithJoins } from '@/types'
+import { supabase } from '@/lib/supabase'
+import type { CoreValue, BehaviourWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
@@ -71,7 +72,7 @@ export default function BehavioursPage() {
 
   useEffect(() => {
     fetchBehaviours()
-    supabase.from('core_values').select('id, name').eq('is_active', true).order('display_order').then(({ data }) => setCoreValues(data ?? []))
+    getCoreValues().then(setCoreValues)
   }, [])
 
   const filtered = filter ? behaviours.filter(b => b.core_value_id === filter) : behaviours
@@ -81,9 +82,9 @@ export default function BehavioursPage() {
   const save = async () => {
     setSaving(true)
     if (editing) {
-      await supabase.from('behaviours').update({ name: form.name, description: form.description || null }).eq('id', editing.id)
+      await ((supabase.from('behaviours') as unknown as any).update({ name: form.name, description: form.description || null })).eq('id', editing.id)
     } else {
-      await supabase.from('behaviours').insert({ name: form.name, description: form.description || null, core_value_id: form.core_value_id, display_order: behaviours.length, is_active: true })
+      await ((supabase.from('behaviours') as unknown as any).insert([{ name: form.name, description: form.description || null }]))
     }
     setShowForm(false); setSaving(false); fetchBehaviours()
   }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { FileText, Download } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -39,16 +39,16 @@ export default function ReportsPage() {
     const { start, end } = getPeriodBounds()
     const { data } = await supabase
       .from('nominations')
-      .select(`id, status, submitted_at, approved_at, recognition_source, snapshot_core_value_name, snapshot_behaviour_name, snapshot_project_name, snapshot_nominator_dept, snapshot_nominee_dept, nominator:nominator_id(full_name, email), nominee:nominee_id(full_name, email), what_happened, what_impact`)
+      .select('*')
       .gte('submitted_at', `${start}T00:00:00Z`)
       .lte('submitted_at', `${end}T23:59:59Z`)
       .order('submitted_at', { ascending: false })
 
-    const rows = (data ?? []).map(n => ({
+    const rows = (data as unknown as { submitted_at: string; status: string; nominator: { full_name: string } | null; nominee: { full_name: string } | null; snapshot_core_value_name: string | null; snapshot_behaviour_name: string | null; snapshot_project_name: string | null; snapshot_nominator_dept: string | null; snapshot_nominee_dept: string | null; recognition_source: string | null; what_happened: string | null; what_impact: string | null }[] | null ?? []).map(n => ({
       'Date':           n.submitted_at ? format(new Date(n.submitted_at), 'dd MMM yyyy') : '',
       'Status':         n.status,
-      'Nominator':      (n.nominator as { full_name: string } | null)?.full_name ?? '',
-      'Nominee':        (n.nominee   as { full_name: string } | null)?.full_name ?? '',
+      'Nominator':      n.nominator?.full_name ?? '',
+      'Nominee':        n.nominee?.full_name ?? '',
       'Core Value':     n.snapshot_core_value_name ?? '',
       'Behaviour':      n.snapshot_behaviour_name ?? '',
       'Project':        n.snapshot_project_name ?? '',

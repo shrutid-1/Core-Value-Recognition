@@ -1,4 +1,3 @@
-import React from 'react'
 import type { BadgeSummary } from '@/types'
 import { CORE_VALUE_COLORS } from '@/lib/constants'
 import type { CoreValueSlug } from '@/lib/constants'

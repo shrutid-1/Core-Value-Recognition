@@ -1,4 +1,3 @@
-import React from 'react'
 import { Award, FolderKanban, AlertCircle } from 'lucide-react'
 import type { WizardData } from '@/pages/employee/GiveRecognitionPage'
 import { Button } from '@/components/ui/button'

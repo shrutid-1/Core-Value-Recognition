@@ -6,7 +6,7 @@ import { seedEmployees, backfillManagerRelationships } from './employeeSeeder.js
 import { seedProjectMembers } from './projectMemberSeeder.js'
 import { seedNominations, seedAppreciations } from './nominationSeeder.js'
 import { logStep, logSuccess, logError } from './utils.js'
-import { formatError, extractErrorSummary } from './errorFormatter.js'
+import { formatError } from './errorFormatter.js'
 
 interface MockData {
   people: any[]
@@ -119,7 +119,7 @@ export class SeedService {
       }
 
       // Step 6: Employees (depends on departments)
-      let employeeMap: Record<string, string> = {}
+      let employeeMap: Record<string, any> = {}
       if (
         !(await executeStep('employees', async () => {
           employeeMap = await seedEmployees(this.supabase, this.mockData)
@@ -156,7 +156,7 @@ export class SeedService {
       if (
         !(await executeStep('nominations', async () => {
           const nominationResult = await seedNominations(this.supabase, this.mockData, employeeMap)
-          nominations = nominationResult._nominations
+          nominations = (nominationResult._nominations as unknown as any[]) || []
           delete nominationResult._nominations
           return nominationResult
         }))
@@ -174,12 +174,14 @@ export class SeedService {
       // Step 11: Calculate Badges (optional, via Edge Function if available)
       logStep('SEED_SERVICE', 'Attempting badge calculation via Edge Function...')
       try {
-        const supabaseUrl = this.supabase.supabaseUrl
+        const supabaseUrl = ((this.supabase as any).supabaseUrl as string | undefined) || ''
         const { data: sessionData } = await this.supabase.auth.getSession()
         const token = sessionData?.session?.access_token
 
         if (!token) {
           logStep('SEED_SERVICE', `Badge calculation skipped (no auth token available)`)
+        } else if (!supabaseUrl) {
+          logStep('SEED_SERVICE', `Badge calculation skipped (no Supabase URL available)`)
         } else {
           const response = await fetch(`${supabaseUrl}/functions/v1/calculate-badges`, {
             method: 'POST',

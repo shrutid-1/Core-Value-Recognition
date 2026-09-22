@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Plus, Archive, Edit2, Building2, X, RotateCcw } from 'lucide-react'
+import { createDepartment, updateDepartment, archiveDepartment } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import type { Department } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
@@ -172,16 +173,9 @@ export default function DepartmentsPage() {
 
     setSaving(true)
     if (editing) {
-      await supabase
-        .from('departments')
-        .update({ name: form.name, description: form.description || null })
-        .eq('id', editing.id)
+      await updateDepartment(editing.id, { name: form.name, description: form.description || null })
     } else {
-      await supabase.from('departments').insert({
-        name: form.name,
-        description: form.description || null,
-        is_active: true,
-      })
+      await createDepartment({ name: form.name, description: form.description || null })
     }
     setShowForm(false)
     setSaving(false)
@@ -191,13 +185,7 @@ export default function DepartmentsPage() {
   const toggleActive = async () => {
     if (!confirmTarget) return
 
-    await supabase
-      .from('departments')
-      .update({
-        is_active: !confirmTarget.is_active,
-        archived_at: !confirmTarget.is_active ? null : new Date().toISOString(),
-      })
-      .eq('id', confirmTarget.id)
+    await archiveDepartment(confirmTarget.id)
 
     setConfirmTarget(null)
     fetchDepartments()

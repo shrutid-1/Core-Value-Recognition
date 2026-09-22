@@ -1,4 +1,3 @@
-import React from 'react'
 import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'
 import { CoreValueBadge } from '@/components/shared/CoreValueBadge'
 import { Badge } from '@/components/ui/badge'

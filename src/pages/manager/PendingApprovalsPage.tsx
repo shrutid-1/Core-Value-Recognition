@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { CheckSquare, MessageSquare, XCircle, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { fetchNominationsWithDetails } from '@/lib/db-queries'
+import { fetchNominationsWithDetailsForApproval } from '@/lib/db-queries'
 import type { NominationWithJoins } from '@/lib/db-queries'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { CardSkeleton } from '@/components/shared/SkeletonLoader'
@@ -36,7 +36,7 @@ export default function PendingApprovalsPage() {
     if (!employee) return
     setLoading(true)
     try {
-      const data = await fetchNominationsWithDetails({
+      const data = await fetchNominationsWithDetailsForApproval({
         status: 'pending',
         assignedApproverId: employee.id,
       })
@@ -51,7 +51,7 @@ export default function PendingApprovalsPage() {
 
   useEffect(() => { fetchPending() }, [fetchPending])
 
-  const openAction = (type: ActionType, nomination: NominationWithDetails) => {
+  const openAction = (type: ActionType, nomination: NominationWithJoins) => {
     setActionModal({ type, nomination })
     setActionText('')
     setActionError(null)

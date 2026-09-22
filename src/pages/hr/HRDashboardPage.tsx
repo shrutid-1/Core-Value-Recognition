@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Award, Users, BarChart3, Clock, Star, ArrowLeftRight } from 'lucide-react'
+import { fetchApprovedNominationsForAnalytics, fetchApprovedNominationCount, fetchNominationsByDateRange, fetchTodayNominations } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { MetricCardSkeleton, CardSkeleton, ChartSkeleton } from '@/components/shared/SkeletonLoader'
@@ -98,22 +99,24 @@ export default function HRDashboardPage() {
   useEffect(() => {
     async function load() {
       const today = todayIST()
-      const [totalRes, empRecRes, activeRes, pendingRes, cvDistRes, recentRes] = await Promise.all([
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
-        supabase.from('nominations').select('nominee_id').eq('status', 'approved'),
-        supabase.from('employees').select('id', { count: 'exact' }).eq('is_active', true),
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('nominations').select('core_value_id, core_values:core_value_id(name, slug, accent_color), snapshot_nominator_dept, snapshot_nominee_dept').eq('status', 'approved'),
+      const [totalCount, empRecData, activeRes, pendingRes, cvDistData, recentRes] = await Promise.all([
+        fetchApprovedNominationCount(),
+        supabase.from('nominations').select('*').eq('status', 'approved'),
+        supabase.from('employees').select('id, full_name, email', { count: 'exact' }).eq('is_active', true),
+        supabase.from('nominations').select('id, status', { count: 'exact', head: true }).eq('status', 'pending'),
+        fetchApprovedNominationsForAnalytics(),
         supabase.from('v_recognition_feed').select('*').order('approved_at', { ascending: false }).limit(6),
       ])
-      const uniqueRecipients = new Set((empRecRes.data ?? []).map(n => n.nominee_id)).size
-      const total = totalRes.count ?? 0
+      const empRecRes = empRecData as unknown as any[]
+      const cvDistRes = cvDistData as unknown as any[]
+      const uniqueRecipients = new Set((empRecRes ?? []).map(n => n.nominee_id)).size
+      const total = totalCount
       const active = activeRes.count ?? 0
       const coverage = active > 0 ? Math.round((uniqueRecipients / active) * 100) : 0
-      const crossTeam = (cvDistRes.data ?? []).filter(n => n.snapshot_nominator_dept && n.snapshot_nominee_dept && n.snapshot_nominator_dept !== n.snapshot_nominee_dept).length
+      const crossTeam = (cvDistRes ?? []).filter(n => n.snapshot_nominator_dept && n.snapshot_nominee_dept && n.snapshot_nominator_dept !== n.snapshot_nominee_dept).length
       const crossTeamPct = total > 0 ? Math.round((crossTeam / total) * 100) : 0
       const cvCountMap: Record<string, { name: string; slug: string; color: string; count: number }> = {}
-      ;(cvDistRes.data ?? []).forEach(n => {
+      ;(cvDistRes ?? []).forEach(n => {
         const cv = n.core_values as { name: string; slug: string; accent_color: string } | null
         if (!cv) return
         if (!cvCountMap[cv.name]) cvCountMap[cv.name] = { name: cv.name, slug: cv.slug, color: cv.accent_color, count: 0 }
@@ -122,17 +125,17 @@ export default function HRDashboardPage() {
       const dist: CVDist[] = Object.values(cvCountMap)
       const topCV = dist.sort((a, b) => b.count - a.count)[0]?.name ?? null
       setCvDist(dist)
-      setMetrics({ totalRecognitions: total, employeesRecognized: uniqueRecipients, activeEmployees: active, pendingApprovals: pendingRes.count ?? 0, mostRecognizedValue: topCV, crossTeamCount: crossTeam, crossTeamPct, coverage })
+      setMetrics({ totalRecognitions: total, employeesRecognized: uniqueRecipients, activeEmployees: active, pendingApprovals: (pendingRes.count ?? 0), mostRecognizedValue: topCV, crossTeamCount: crossTeam, crossTeamPct, coverage })
       const months: TrendPoint[] = []
       for (let i = 11; i >= 0; i--) {
         const d = subMonths(new Date(), i)
         const start = startOfMonth(d).toISOString()
         const end   = endOfMonth(d).toISOString()
-        const { count } = await supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('status', 'approved').gte('approved_at', start).lte('approved_at', end)
-        months.push({ month: format(d, 'MMM yy'), count: count ?? 0 })
+        const count = await fetchNominationsByDateRange(start, end)
+        months.push({ month: format(d, 'MMM yy'), count })
       }
       setTrend(months)
-      const { data: todayNoms } = await supabase.from('nominations').select('nominee_id, core_value_id, nominee:nominee_id(full_name), core_values:core_value_id(name)').eq('status', 'approved').gte('approved_at', `${today}T00:00:00+00:00`).lte('approved_at', `${today}T23:59:59+00:00`)
+      const todayNoms = await fetchTodayNominations(today)
       const leaderMap: Record<string, Record<string, { count: number; name: string; cvName: string }>> = {}
       ;(todayNoms ?? []).forEach(n => {
         const cv = n.core_values as { name: string } | null
@@ -147,7 +150,7 @@ export default function HRDashboardPage() {
         return { core_value_name: cvName, employee_name: top.name, count: top.count }
       })
       setDailyLeaders(leaders)
-      setRecentFeed(recentRes.data ?? [])
+      setRecentFeed((recentRes.data as unknown as any[]) ?? [])
       setLoading(false)
     }
     load()

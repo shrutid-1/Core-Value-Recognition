@@ -1,4 +1,3 @@
-import React from 'react'
 import { Bell, CheckCheck } from 'lucide-react'
 import { useNotifications } from '@/context/NotificationContext'
 import { NotificationItem } from './NotificationItem'

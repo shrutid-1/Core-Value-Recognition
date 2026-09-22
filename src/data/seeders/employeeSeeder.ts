@@ -4,7 +4,6 @@ import {
   logSuccess,
   logError,
   formatCounts,
-  generateDeterministicUUID,
   generateEmail,
   inferSystemRole,
 } from './utils.js'

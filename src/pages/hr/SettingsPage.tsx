@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { fetchSettingsConfigForEdit, fetchBadgeDefinitionsForEdit, updateAppConfig, updateBadgeDefinition } from '@/lib/db-queries'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -40,30 +40,29 @@ export default function SettingsPage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('app_config').select('*'),
-      supabase.from('badge_definitions').select('*').order('level'),
-    ]).then(([configRes, badgeRes]) => {
-      const cfg = configRes.data ?? []
+      fetchSettingsConfigForEdit(),
+      fetchBadgeDefinitionsForEdit(),
+    ]).then(([cfg, badges]) => {
       setConfig(cfg)
       const v: Record<string, string> = {}
       cfg.forEach(c => { v[c.key] = String(c.value).replace(/"/g, '') })
       setValues(v)
-      setBadgeDefs(badgeRes.data ?? [])
+      setBadgeDefs(badges)
       setLoading(false)
     })
   }, [])
 
   const saveConfig = async (key: string) => {
     setSaving(key)
-    await supabase.from('app_config').update({ value: values[key] }).eq('key', key)
+    await updateAppConfig(key, values[key])
     setSaving(null)
   }
 
   const saveBadge = async (badge: BadgeDefinition, min: number, max: number | null) => {
     setSaving(`badge-${badge.id}`)
-    await supabase.from('badge_definitions').update({ minimum_count: min, maximum_count: max }).eq('id', badge.id)
-    const { data } = await supabase.from('badge_definitions').select('*').order('level')
-    setBadgeDefs(data ?? [])
+    await updateBadgeDefinition(badge.id, { minimum_count: min, maximum_count: max })
+    const badges = await fetchBadgeDefinitionsForEdit()
+    setBadgeDefs(badges)
     setSaving(null)
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Users } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
@@ -17,11 +17,11 @@ export default function TeamRecognitionPage() {
     if (!employee) return
     supabase
       .from('employees')
-      .select('id')
+      .select('*')
       .eq('manager_id', employee.id)
       .eq('is_active', true)
       .then(async ({ data: teamData }) => {
-        const teamIds = (teamData ?? []).map(e => e.id)
+        const teamIds = (teamData as unknown as { id: string }[] | null ?? []).map(e => e.id)
         if (teamIds.length === 0) { setLoading(false); return }
         const { data } = await supabase
           .from('v_recognition_feed')
@@ -29,7 +29,7 @@ export default function TeamRecognitionPage() {
           .in('nominee_id', teamIds)
           .order('approved_at', { ascending: false })
           .limit(50)
-        setItems(data ?? [])
+        setItems((data as unknown as RecognitionFeedItem[] | null) ?? [])
         setLoading(false)
       })
   }, [employee])

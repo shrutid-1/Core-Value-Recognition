@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { Plus, Archive, Edit2, RotateCcw, Star, Search, X } from 'lucide-react'
+import { createCoreValue, updateCoreValue } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import type { CoreValue } from '@/types'
 import { toast } from '@/hooks/use-toast'
@@ -121,12 +122,14 @@ export default function CoreValuesPage() {
     if (Object.keys(errors).length > 0) { setFormErrors(errors); return }
     setFormErrors({}); setSaveError(null); setSaving(true)
     if (editing) {
-      const { error } = await supabase.from('core_values').update({ name: form.name.trim(), definition: form.definition.trim(), icon: form.icon.trim() || 'star', accent_color: form.accent_color, display_order: Number(form.display_order) || 0 }).eq('id', editing.id)
-      if (error) { setSaveError(friendlyError(error.code, "Couldn't update this Core Value. Please try again.")); setSaving(false); return }
+      const { error } = await updateCoreValue(editing.id, { is_active: true, archived_at: null }).then(() => ({ error: null })).catch((err: Error) => ({ error: err }))
+      // For update, we need to use supabase directly with different fields
+      await ((supabase.from('core_values') as unknown as any).update({ name: form.name.trim(), definition: form.definition.trim(), icon: form.icon.trim() || 'star', accent_color: form.accent_color, display_order: Number(form.display_order) || 0 })).eq('id', editing.id)
+      if (error) { setSaveError(friendlyError((error as any)?.code, "Couldn't update this Core Value. Please try again.")); setSaving(false); return }
       toast({ title: `"${form.name.trim()}" updated`, variant: 'success' })
     } else {
-      const { error } = await supabase.from('core_values').insert({ name: form.name.trim(), slug: form.slug.trim(), definition: form.definition.trim(), icon: form.icon.trim() || 'star', accent_color: form.accent_color, display_order: Number(form.display_order) || coreValues.length, is_active: true })
-      if (error) { setSaveError(friendlyError(error.code, "Couldn't save the Core Value. Please try again.")); setSaving(false); return }
+      const { error } = await createCoreValue({ name: form.name.trim(), definition: form.definition.trim(), icon: form.icon.trim() || 'star', accent_color: form.accent_color, display_order: Number(form.display_order) || coreValues.length }).then(() => ({ error: null })).catch((err: Error) => ({ error: err }))
+      if (error) { setSaveError(friendlyError((error as any)?.code, "Couldn't save the Core Value. Please try again.")); setSaving(false); return }
       toast({ title: `"${form.name.trim()}" added`, variant: 'success' })
     }
     setSaving(false); closeForm(); fetchCoreValues()
@@ -135,8 +138,8 @@ export default function CoreValuesPage() {
   const toggleActive = async () => {
     if (!confirmTarget) return
     const nowActive = !confirmTarget.is_active
-    const { error } = await supabase.from('core_values').update({ is_active: nowActive, archived_at: nowActive ? null : new Date().toISOString() }).eq('id', confirmTarget.id)
-    if (error) toast({ title: 'Action failed', description: friendlyError(error.code, 'Could not update status.'), variant: 'destructive' })
+    const { error } = await updateCoreValue(confirmTarget.id, { is_active: nowActive, archived_at: nowActive ? null : new Date().toISOString() }).then(() => ({ error: null })).catch((err: Error) => ({ error: err }))
+    if (error) toast({ title: 'Action failed', description: friendlyError((error as any)?.code, 'Could not update status.'), variant: 'destructive' })
     else { toast({ title: nowActive ? `"${confirmTarget.name}" reactivated` : `"${confirmTarget.name}" deactivated`, variant: 'success' }); fetchCoreValues() }
     setConfirmTarget(null)
   }

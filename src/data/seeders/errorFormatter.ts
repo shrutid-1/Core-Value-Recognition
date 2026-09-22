@@ -105,7 +105,9 @@ function describePostgresError(code?: string): string | undefined {
  * @returns Formatted error object with message, code, details, etc.
  */
 export function formatError(error: unknown, context?: string): FormattedError {
-  const result: FormattedError = {}
+  const result: FormattedError = {
+    message: 'Unknown error',
+  }
 
   // Try to extract Supabase-specific error details
   const supabaseDetails = extractSupabaseError(error)

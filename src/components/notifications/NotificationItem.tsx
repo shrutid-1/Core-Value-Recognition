@@ -57,7 +57,6 @@ export function NotificationItem({ notification, onClose }: NotificationItemProp
         cursor: 'pointer',
         transition: 'background 120ms',
         border: 'none',
-        borderBottom: '1px solid var(--color-divider)',
         fontFamily: 'Barlow, sans-serif',
       }}
       onMouseEnter={e =>

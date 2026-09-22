@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { Heart, Briefcase } from 'lucide-react'
 import type { RecognitionFeedItem } from '@/types'
 import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'
 import { CoreValueBadge } from '@/components/shared/CoreValueBadge'
 import { timeAgo } from '@/lib/date-utils'
-import { supabase } from '@/lib/supabase'
+import { createNominationAppreciation } from '@/lib/db-queries'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 import type { CoreValueSlug } from '@/lib/constants'
@@ -23,10 +23,7 @@ export function RecognitionCard({ item, compact = false }: RecognitionCardProps)
     if (!employee || appreciated) return
     setAppreciated(true)
     setAppreciationCount(c => c + 1)
-    await supabase.from('nomination_appreciations').insert({
-      nomination_id: item.id,
-      employee_id: employee.id,
-    })
+    await createNominationAppreciation(item.id, employee.id)
   }
 
   const slug = item.core_value_name?.toLowerCase().replace(/\s+/g, '') as CoreValueSlug

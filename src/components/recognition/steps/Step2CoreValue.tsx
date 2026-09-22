@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { CoreValue } from '@/types'
 import { Skeleton } from '@/components/shared/SkeletonLoader'

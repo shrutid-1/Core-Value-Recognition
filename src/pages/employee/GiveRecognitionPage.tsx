@@ -97,10 +97,10 @@ export default function GiveRecognitionPage() {
       if (!approverId || approverId === employee.id) {
         const { data: config } = await supabase
           .from('app_config')
-          .select('value')
+          .select('*')
           .eq('key', 'hr_fallback_employee_id')
           .single()
-        const fallbackId = config?.value ? String(config.value).replace(/"/g, '') : null
+        const fallbackId = (config as unknown as { value: string } | null)?.value ? String((config as unknown as { value: string }).value).replace(/"/g, '') : null
         approverId = fallbackId || null
       }
 
@@ -108,11 +108,11 @@ export default function GiveRecognitionPage() {
       if (!approverId) {
         const { data: hrAdmins } = await supabase
           .from('employees')
-          .select('id')
+          .select('*')
           .eq('role', 'hr_admin')
           .eq('is_active', true)
           .limit(1)
-        approverId = hrAdmins?.[0]?.id ?? null
+        approverId = (hrAdmins as unknown as Employee[] | null)?.[0]?.id ?? null
 
         if (!approverId) {
           setSubmitError(
@@ -126,10 +126,10 @@ export default function GiveRecognitionPage() {
       // Fetch approver name for success message
       const { data: approverData } = await supabase
         .from('employees')
-        .select('full_name')
+        .select('*')
         .eq('id', approverId)
         .single()
-      setAssignedApproverName(approverData?.full_name ?? null)
+      setAssignedApproverName((approverData as unknown as Employee | null)?.full_name ?? null)
 
       // Fetch department names for historical snapshots
       let nominatorDeptName: string | null = null
@@ -138,53 +138,56 @@ export default function GiveRecognitionPage() {
       if (employee.department_id) {
         const { data: dept } = await supabase
           .from('departments')
-          .select('name')
+          .select('*')
           .eq('id', employee.department_id)
           .single()
-        nominatorDeptName = dept?.name ?? null
+        nominatorDeptName = (dept as unknown as { name: string } | null)?.name ?? null
       }
 
       if (nominee.department_id) {
         const { data: dept } = await supabase
           .from('departments')
-          .select('name')
+          .select('*')
           .eq('id', nominee.department_id)
           .single()
-        nomineeDeptName = dept?.name ?? null
+        nomineeDeptName = (dept as unknown as { name: string } | null)?.name ?? null
       }
 
       // Classify recognition source
       const source = classifyRecognitionSource(
         employee.role,
-        nominee.role,
         employee.id,
         nominee.manager_id
       )
 
       // Create nomination with full historical snapshots
-      const { error } = await supabase.from('nominations').insert({
-        nominator_id:                employee.id,
-        nominee_id:                  nominee.id,
-        core_value_id:               data.coreValue.id,
-        behaviour_id:                data.behaviour?.id ?? null,
-        scenario_id:                 data.scenario?.id ?? null,
-        what_happened:               data.whatHappened,
-        what_impact:                 data.whatImpact,
-        project_id:                  data.projectId,
-        // Historical snapshots — populated now, never updated
-        snapshot_core_value_name:    data.coreValue.name,
-        snapshot_behaviour_name:     data.behaviour?.name ?? null,
-        snapshot_scenario_name:      data.scenario?.name ?? null,
-        snapshot_project_name:       data.projectName,
-        snapshot_nominator_dept:     nominatorDeptName,
-        snapshot_nominee_dept:       nomineeDeptName,
-        snapshot_nominee_manager_id: nominee.manager_id,
-        recognition_source:          source,
-        status:                      'pending',
-        assigned_approver_id:        approverId,
-        submitted_at:                new Date().toISOString(),
-        idempotency_key:             idempotencyKey,
-      })
+      const { error } = await supabase.from('nominations').insert(
+        [
+          {
+            nominator_id:                employee.id,
+            nominee_id:                  nominee.id,
+            core_value_id:               data.coreValue.id,
+            behaviour_id:                data.behaviour?.id ?? null,
+            scenario_id:                 data.scenario?.id ?? null,
+            what_happened:               data.whatHappened,
+            what_impact:                 data.whatImpact,
+            project_id:                  data.projectId,
+            // Historical snapshots — populated now, never updated
+            snapshot_core_value_name:    data.coreValue.name,
+            snapshot_behaviour_name:     data.behaviour?.name ?? null,
+            snapshot_scenario_name:      data.scenario?.name ?? null,
+            snapshot_project_name:       data.projectName,
+            snapshot_nominator_dept:     nominatorDeptName,
+            snapshot_nominee_dept:       nomineeDeptName,
+            snapshot_nominee_manager_id: nominee.manager_id,
+            recognition_source:          source,
+            status:                      'pending',
+            assigned_approver_id:        approverId,
+            submitted_at:                new Date().toISOString(),
+            idempotency_key:             idempotencyKey,
+          },
+        ] as unknown as any
+      )
 
       if (error) {
         if (error.code === '23505') {

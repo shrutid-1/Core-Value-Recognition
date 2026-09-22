@@ -106,14 +106,14 @@ export default function ManagerDashboardPage() {
     if (!employee) return
     async function load() {
       const [pendingRes, teamRes] = await Promise.all([
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('assigned_approver_id', employee!.id).eq('status', 'pending'),
-        supabase.from('employees').select('id', { count: 'exact', head: true }).eq('manager_id', employee!.id).eq('is_active', true),
+        supabase.from('nominations').select('id, nominator_id', { count: 'exact', head: true }).eq('assigned_approver_id', employee!.id).eq('status', 'pending'),
+        supabase.from('employees').select('id, full_name, email', { count: 'exact', head: true }).eq('manager_id', employee!.id).eq('is_active', true),
       ])
-      const { data: teamData } = await supabase.from('employees').select('id').eq('manager_id', employee!.id).eq('is_active', true)
-      const teamIds = (teamData ?? []).map(e => e.id)
+      const { data: teamData } = await supabase.from('employees').select('*').eq('manager_id', employee!.id).eq('is_active', true)
+      const teamIds = (teamData as unknown as { id: string }[] | null ?? []).map(e => e.id)
       let teamRecognitions = 0
       if (teamIds.length > 0) {
-        const { count } = await supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('status', 'approved').in('nominee_id', teamIds)
+        const { count } = await supabase.from('nominations').select('id, nominee_id', { count: 'exact', head: true }).eq('status', 'approved').in('nominee_id', teamIds)
         teamRecognitions = count ?? 0
       }
       setStats({ pending: pendingRes.count ?? 0, teamMembers: teamRes.count ?? 0, teamRecognitions })

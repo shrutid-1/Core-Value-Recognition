@@ -10,9 +10,6 @@ import { useAuth } from '@/context/AuthContext'
 import LoginPage from '@/pages/auth/LoginPage'
 import ResetPasswordPage from '@/pages/auth/ResetPasswordPage'
 
-// Diagnostic page (temporary, for debugging)
-import DiagnosticPage from '@/pages/DiagnosticPage'
-
 // Role-aware default redirect
 function RoleRedirect() {
   const { employee, loading } = useAuth()
@@ -74,16 +71,6 @@ export const router = createBrowserRouter([
   // Auth routes
   { path: ROUTES.LOGIN, element: <LoginPage /> },
   { path: ROUTES.RESET_PASSWORD, element: <ResetPasswordPage /> },
-
-  // Diagnostic route (temporary - remove after debugging)
-  {
-    path: '/_diagnostic',
-    element: (
-      <ProtectedRoute>
-        <DiagnosticPage />
-      </ProtectedRoute>
-    ),
-  },
 
   // App shell wrapping all protected routes
   {

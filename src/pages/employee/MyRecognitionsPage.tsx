@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Award, Send } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import { fetchNominationsWithDetails } from '@/lib/db-queries'
 import { useAuth } from '@/context/AuthContext'
 import type { NominationWithJoins } from '@/types'
@@ -114,7 +113,7 @@ export default function MyRecognitionsPage() {
       ) : (
         <div className="vs-card" style={{ overflow: 'visible' }}>
           {items.map((n, i) => {
-            const cv = n.core_value as { name: string; slug: string } | null
+            const cv = n.core_value
             const other = tab === 'received' ? n.nominator : n.nominee
             const otherPerson = other as { full_name: string; avatar_url: string | null } | null
             const statusInfo = STATUS_STYLE[n.status] ?? { label: n.status, variant: 'neutral' as const }

@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, LogOut, Settings, Menu, ChevronDown, Search } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { useNotifications } from '@/context/NotificationContext'
 import { NotificationCenter } from '@/components/notifications/NotificationCenter'
 import { ROUTES } from '@/lib/constants'
-import { cn } from '@/lib/utils'
 
 interface TopBarProps {
   onMobileMenuOpen: () => void

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -58,13 +58,13 @@ export default function CoreValueJourneyPage() {
     const { start, end } = currentAnnualPeriod()
 
     Promise.all([
-      supabase.from('employee_value_badges').select('*, core_values:core_value_id (id, name, slug, accent_color, icon)').eq('employee_id', employee.id).eq('period_type', 'annual'),
+      supabase.from('employee_value_badges').select('id, employee_id, core_value_id, period_type, period_start, period_end, recognition_count, unique_recognizer_count, badge_level, last_updated, created_at, core_values:core_value_id (id, name, slug, accent_color, icon)').eq('employee_id', employee.id).eq('period_type', 'annual'),
       supabase.from('badge_definitions').select('*').order('level'),
-      supabase.from('core_values').select('id, name, slug, accent_color, icon').eq('is_active', true).order('display_order'),
+      supabase.from('core_values').select('*').eq('is_active', true).order('display_order'),
     ]).then(([badgeRes, defRes, cvRes]) => {
-      const defs = defRes.data ?? []
-      const coreValues = cvRes.data ?? []
-      const badgeMap = new Map((badgeRes.data ?? []).map(b => [b.core_value_id, b]))
+      const defs = (defRes.data as unknown as { level: number; name: string; minimum_count: number }[] | null) ?? []
+      const coreValues = (cvRes.data as unknown as { id: string; name: string; slug: string; accent_color: string; icon: string }[] | null) ?? []
+      const badgeMap = new Map((badgeRes.data as unknown as { core_value_id: string; badge_level: number | null; recognition_count: number; unique_recognizer_count: number; period_start: string; period_end: string }[] | null ?? []).map(b => [b.core_value_id, b]))
 
       const result = coreValues.map(cv => {
         const b = badgeMap.get(cv.id)

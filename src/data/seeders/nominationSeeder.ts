@@ -120,20 +120,10 @@ export async function seedNominations(
     throw pjError
   }
 
-  const { data: departments, error: deptError } = await supabase
-    .from('departments')
-    .select('id, name')
-
-  if (deptError) {
-    logError('NOMINATIONS', 'Failed to fetch departments', deptError)
-    throw deptError
-  }
-
   // Build lookup maps
   const cvMap = new Map(coreValues.map((cv) => [cv.name, { id: cv.id, slug: cv.slug }]))
   const bhMap = new Map(behaviours.map((bh) => [bh.name, { id: bh.id, coreValueId: bh.core_value_id }]))
   const prjMap = new Map(projects.map((p) => [p.name, p.id]))
-  const deptMap = new Map(departments.map((d) => [d.name, d.id]))
 
   // Collect nominations from feed
   const nominations: Array<{
@@ -377,8 +367,8 @@ export async function seedNominations(
   const counts = formatCounts(inserted, updated, skipped)
   logSuccess('NOMINATIONS', 'Nominations seeding complete', counts)
 
-  // Return nominations for appreciation seeding
-  return { ...counts, _nominations: nominations }
+  // Return nominations for appreciation seeding along with counts
+  return { ...counts, _nominations: nominations } as any
 }
 
 /**

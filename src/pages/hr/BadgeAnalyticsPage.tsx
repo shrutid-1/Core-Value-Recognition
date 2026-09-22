@@ -48,7 +48,7 @@ export default function BadgeAnalyticsPage() {
       const { start } = currentAnnualPeriod()
       const { data: rawBadges } = await supabase
         .from('employee_value_badges')
-        .select('badge_level, core_values:core_value_id(name, slug)')
+        .select('*')
         .eq('period_type', 'annual')
         .gte('period_start', start)
         .not('badge_level', 'is', null)

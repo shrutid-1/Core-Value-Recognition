@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Rss } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { RecognitionFeedItem } from '@/types'

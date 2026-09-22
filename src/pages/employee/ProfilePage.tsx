@@ -1,4 +1,3 @@
-import React from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'

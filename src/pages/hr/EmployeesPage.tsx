@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { Plus, Search, UserCheck, UserX, Edit2, Users, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { fetchEmployeesWithDetails, fetchDepartments, fetchManagers } from '@/lib/db-queries'
-import type { Employee, Department, EmployeeWithDept } from '@/types'
+import type { Employee, Department } from '@/types'
 import type { EmployeeWithJoins } from '@/lib/db-queries'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { TableSkeleton } from '@/components/shared/SkeletonLoader'
@@ -149,9 +149,9 @@ export default function EmployeesPage() {
   const onSave = async (data: EmployeeForm) => {
     setSaving(true)
     if (editTarget) {
-      await supabase.from('employees').update({ full_name: data.full_name, role: data.role as UserRole, department_id: data.department_id || null, manager_id: data.manager_id || null }).eq('id', editTarget.id)
+      await ((supabase.from('employees') as unknown as any).update({ full_name: data.full_name, role: data.role as UserRole, department_id: data.department_id || null, manager_id: data.manager_id || null })).eq('id', editTarget.id)
     } else {
-      await supabase.from('employees').insert({ full_name: data.full_name, email: data.email, employee_id: data.employee_id, role: data.role as UserRole, department_id: data.department_id || null, manager_id: data.manager_id || null, is_active: true })
+      await ((supabase.from('employees') as unknown as any).insert([{ full_name: data.full_name, email: data.email, employee_id: data.employee_id, role: data.role as UserRole, department_id: data.department_id || null, manager_id: data.manager_id || null, is_active: true }]))
     }
     setShowForm(false)
     setSaving(false)
@@ -160,7 +160,7 @@ export default function EmployeesPage() {
 
   const toggleActive = async () => {
     if (!confirmToggle) return
-    await supabase.from('employees').update({ is_active: !confirmToggle.is_active }).eq('id', confirmToggle.id)
+    await ((supabase.from('employees') as unknown as any).update({ is_active: !confirmToggle.is_active })).eq('id', confirmToggle.id)
     setConfirmToggle(null)
     fetchEmployees(query)
   }

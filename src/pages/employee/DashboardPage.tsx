@@ -78,15 +78,15 @@ export default function DashboardPage() {
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
 
       const [receivedRes, givenRes, monthRes, badgeRes, feedRes] = await Promise.all([
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('nominee_id', employee!.id).eq('status', 'approved'),
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('nominator_id', employee!.id).eq('status', 'approved'),
-        supabase.from('nominations').select('id', { count: 'exact', head: true }).eq('nominee_id', employee!.id).eq('status', 'approved').gte('approved_at', monthStart),
-        supabase.from('employee_value_badges').select('core_value_id, recognition_count, unique_recognizer_count, badge_level, period_start, period_end, core_values:core_value_id (name, slug, accent_color, icon)').eq('employee_id', employee!.id).eq('period_type', 'annual'),
+        supabase.from('nominations').select('id, nominee_id', { count: 'exact', head: true }).eq('nominee_id', employee!.id).eq('status', 'approved'),
+        supabase.from('nominations').select('id, nominator_id', { count: 'exact', head: true }).eq('nominator_id', employee!.id).eq('status', 'approved'),
+        supabase.from('nominations').select('id, nominee_id', { count: 'exact', head: true }).eq('nominee_id', employee!.id).eq('status', 'approved').gte('approved_at', monthStart),
+        supabase.from('employee_value_badges').select('id, employee_id, core_value_id, recognition_count, unique_recognizer_count, badge_level, period_start, period_end, core_values:core_value_id (id, name, slug, accent_color, icon)').eq('employee_id', employee!.id).eq('period_type', 'annual'),
         supabase.from('v_recognition_feed').select('*').or(`nominator_id.eq.${employee!.id},nominee_id.eq.${employee!.id}`).order('approved_at', { ascending: false }).limit(5),
       ])
 
       const valueCountMap: Record<string, number> = {}
-      ;(badgeRes.data ?? []).forEach(b => {
+      ;(badgeRes.data as unknown as { core_values: { name: string } | null; recognition_count: number }[] | null ?? []).forEach(b => {
         const cv = b.core_values as { name: string } | null
         if (cv) valueCountMap[cv.name] = (valueCountMap[cv.name] ?? 0) + b.recognition_count
       })
@@ -97,9 +97,9 @@ export default function DashboardPage() {
       setStats({ received: receivedRes.count ?? 0, given: givenRes.count ?? 0, thisMonth: monthRes.count ?? 0, mostRecognizedValue })
 
       const { data: defs } = await supabase.from('badge_definitions').select('*').order('level')
-      const defList = defs ?? []
+      const defList = (defs as unknown as { level: number; name: string; minimum_count: number }[] | null) ?? []
 
-      const mappedBadges: BadgeSummary[] = (badgeRes.data ?? []).map(b => {
+      const mappedBadges: BadgeSummary[] = (badgeRes.data as unknown as { core_value_id: string; core_values: { name: string; slug: string; accent_color: string; icon: string } | null; badge_level: number | null; recognition_count: number; unique_recognizer_count: number; period_start: string; period_end: string }[] | null ?? []).map(b => {
         const cv = b.core_values as { name: string; slug: string; accent_color: string; icon: string } | null
         const level = b.badge_level
         const nextDef = defList.find(d => d.level === (level ? level + 1 : 1))
@@ -114,7 +114,7 @@ export default function DashboardPage() {
       })
 
       setBadges(mappedBadges)
-      setRecentFeed(feedRes.data ?? [])
+      setRecentFeed((feedRes.data as unknown as RecognitionFeedItem[] | null) ?? [])
       setLoading(false)
     }
     load()

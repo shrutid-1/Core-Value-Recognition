@@ -34,7 +34,6 @@ export function pluralize(count: number, singular: string, plural?: string): str
 /** Determine recognition source based on nominator/nominee roles */
 export function classifyRecognitionSource(
   nominatorRole: string,
-  nomineeRole: string,
   nominatorId: string,
   nomineeManagerId: string | null
 ): 'peer' | 'manager' | 'hr' | 'leadership' {

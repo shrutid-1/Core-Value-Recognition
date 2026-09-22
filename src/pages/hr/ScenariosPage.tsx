@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Plus, Edit2, MessageSquare, X } from 'lucide-react'
+import { createScenario, updateScenario } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import { fetchScenariosWithRelations } from '@/lib/db-queries'
-import type { Scenario, CoreValue, Behaviour, ScenarioWithJoins } from '@/types'
+import type { CoreValue, Behaviour, ScenarioWithJoins } from '@/types'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -73,8 +74,8 @@ export default function ScenariosPage() {
 
   useEffect(() => {
     fetchScenarios()
-    supabase.from('core_values').select('id, name').eq('is_active', true).order('display_order').then(({ data }) => setCoreValues(data ?? []))
-    supabase.from('behaviours').select('id, name, core_value_id').eq('is_active', true).order('name').then(({ data }) => setBehaviours(data ?? []))
+    supabase.from('core_values').select('*').eq('is_active', true).order('display_order').then(({ data }) => setCoreValues(data ?? []))
+    supabase.from('behaviours').select('*').eq('is_active', true).order('name').then(({ data }) => setBehaviours(data ?? []))
   }, [])
 
   useEffect(() => {
@@ -87,9 +88,9 @@ export default function ScenariosPage() {
   const save = async () => {
     setSaving(true)
     if (editing) {
-      await supabase.from('scenarios').update({ name: form.name, description: form.description || null }).eq('id', editing.id)
+      await updateScenario(editing.id, { name: form.name, description: form.description || null })
     } else {
-      await supabase.from('scenarios').insert({ name: form.name, description: form.description || null, core_value_id: form.core_value_id, behaviour_id: form.behaviour_id, display_order: scenarios.length, is_active: true })
+      await createScenario({ name: form.name, description: form.description || null })
     }
     setShowForm(false); setSaving(false); fetchScenarios()
   }

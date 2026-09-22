@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { markNotificationAsRead, markNotificationsAsRead } from '@/lib/db-queries'
 import { supabase } from '@/lib/supabase'
 import type { Notification } from '@/types'
 import { useAuth } from './AuthContext'
@@ -75,10 +76,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   }, [employee])
 
   const markAsRead = async (id: string) => {
-    await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('id', id)
+    await markNotificationAsRead(id)
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, is_read: true } : n)
     )
@@ -86,11 +84,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAllAsRead = async () => {
     if (!employee) return
-    await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('recipient_id', employee.id)
-      .eq('is_read', false)
+    await markNotificationsAsRead(employee.id)
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 

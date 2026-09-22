@@ -1,4 +1,3 @@
-import React from 'react'
 import { RouterProvider } from 'react-router-dom'
 import { AuthProvider } from '@/context/AuthContext'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
