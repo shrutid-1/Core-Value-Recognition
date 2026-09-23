@@ -10,5 +10,8 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "metadata": {
+    "deploymentNote": "SPA routing with password reset flow configured. Update Supabase site_url in dashboard to fix redirect issues."
+  }
 }
