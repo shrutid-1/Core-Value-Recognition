@@ -6,6 +6,7 @@ const allowedOrigins = [
   'http://localhost:5174',      // Development (Vite default port)
   'http://localhost:3000',      // Development (alternative)
   'http://localhost:8080',      // Development (alternative)
+  'https://core-value-recognition.vercel.app',  // Production (Vercel)
 ]
 
 // Check if SUPABASE_FRONTEND_URL is set for production
@@ -17,7 +18,7 @@ if (prodUrl) {
 function getCorsHeaders(origin: string | null): Record<string, string> {
   const isAllowed = origin && allowedOrigins.includes(origin)
   return {
-    'Access-Control-Allow-Origin': isAllowed ? origin : 'http://localhost:5174',
+    'Access-Control-Allow-Origin': isAllowed ? origin : 'https://core-value-recognition.vercel.app',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',

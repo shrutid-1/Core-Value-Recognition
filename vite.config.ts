@@ -13,4 +13,9 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  // Ensure environment variables are available at build time
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY),
+  },
 })

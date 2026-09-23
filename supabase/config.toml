@@ -15,7 +15,7 @@ major_version = 15
 [studio]
 port = 54323
 
-[inbucket]
+[local_smtp]
 port = 54324
 smtp_port = 54325
 pop3_port = 54326
@@ -36,9 +36,12 @@ enabled = false
 enabled = false
 
 [functions]
-verify_jwt = true
 
 # process-approval does its own JWT validation inside the handler
 # OPTIONS preflight must not require JWT, so we bypass gateway verification
 [functions.process-approval]
+verify_jwt = false
+
+# provision-employees does its own JWT validation inside the handler
+[functions.provision-employees]
 verify_jwt = false
