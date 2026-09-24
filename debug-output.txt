@@ -1,0 +1,7 @@
+NotFound: FileSystem.readFile (C:\Users\Shruti D\.supabase\profile)
+Using access token for profile: supabase
+Supabase CLI 2.117.0
+Using profile: supabase (supabase.co)
+Using access token for profile: supabase
+WARN: config section [inbucket] is deprecated. Please use [local_smtp] instead.
+failed to read config: CliConfigParseError

@@ -333,3 +333,13 @@ export async function fetchNominationsWithDetailsForApproval(filters?: {
   const { data } = await builder
   return (data as unknown as NominationWithJoins[]) ?? []
 }
+
+// Fetch clarification responses for a nomination
+export async function fetchClarificationResponses(nominationId: string) {
+  const { data } = await supabase
+    .from('clarification_responses')
+    .select('id, nomination_id, responder_id, response_text, created_at, updated_at')
+    .eq('nomination_id', nominationId)
+    .order('created_at', { ascending: true })
+  return (data as unknown as any[]) ?? []
+}

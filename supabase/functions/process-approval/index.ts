@@ -25,7 +25,7 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
   }
 }
 
-type Action = 'approve' | 'reject' | 'request_clarification'
+type Action = 'approve' | 'reject' | 'request_clarification' | 'submit_clarification_response'
 
 serve(async (req) => {
   const origin = req.headers.get('origin')
@@ -74,13 +74,14 @@ serve(async (req) => {
       })
     }
 
-    const { nomination_id, action, reason, clarification_note } =
+    const { nomination_id, action, reason, clarification_note, response_text } =
       await req.json() as {
         nomination_id: string
         action: Action
-        approver_id: string
+        approver_id?: string
         reason?: string
         clarification_note?: string
+        response_text?: string
       }
 
     if (!nomination_id || !action) {
@@ -101,6 +102,12 @@ serve(async (req) => {
       })
     }
 
+    if (action === 'submit_clarification_response' && !response_text) {
+      return new Response(JSON.stringify({ error: 'response_text required for clarification submission' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     // Fetch nomination
     const { data: nomination } = await supabase
       .from('nominations')
@@ -114,6 +121,77 @@ serve(async (req) => {
       })
     }
 
+    const now = new Date().toISOString()
+
+    // Handle clarification_response action (nominator only)
+    if (action === 'submit_clarification_response') {
+      // Verify caller is the nominator
+      if (nomination.nominator_id !== approverEmp.id) {
+        return new Response(JSON.stringify({ error: 'Only the nominator can submit clarification responses' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Verify nomination is in clarification_requested status
+      if (nomination.status !== 'clarification_requested') {
+        return new Response(JSON.stringify({ error: 'This nomination is not awaiting clarification' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        })
+      }
+
+      // Insert clarification response
+      const { error: insertError } = await supabase
+        .from('clarification_responses')
+        .insert({
+          nomination_id,
+          responder_id: approverEmp.id,
+          response_text,
+        })
+
+      if (insertError) throw insertError
+
+      // Update nomination to resubmitted status
+      const { error: updateError } = await supabase
+        .from('nominations')
+        .update({
+          status: 'resubmitted',
+          clarification_responded_at: now,
+        })
+        .eq('id', nomination_id)
+
+      if (updateError) throw updateError
+
+      // Notify assigned approver that clarification response is ready for review
+      const approver = await supabase
+        .from('employees')
+        .select('id, full_name')
+        .eq('id', nomination.assigned_approver_id)
+        .single()
+
+      await createNotification(supabase, {
+        recipient_id: nomination.assigned_approver_id,
+        type: 'clarification_responded',
+        title: 'Clarification response ready for review',
+        body: `${approverEmp.full_name} has submitted a response to your clarification request on the recognition of ${(nomination.nominee as { full_name: string }).full_name}. The nomination is ready for re-approval.`,
+        related_id: nomination_id,
+        related_type: 'nomination',
+      })
+
+      // Write audit log
+      await writeAuditLog(supabase, {
+        actor_id: approverEmp.id,
+        action: 'nomination_clarification_responded',
+        entity_type: 'nomination',
+        entity_id: nomination_id,
+        new_value: { status: 'resubmitted', clarification_responded_at: now },
+      })
+
+      return new Response(JSON.stringify({ success: true, action }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // For all other actions (approve, reject, request_clarification), caller must be approver
     // Verify caller is authorized approver
     const isAuthorized =
       nomination.assigned_approver_id === approverEmp.id ||
@@ -124,8 +202,6 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    const now = new Date().toISOString()
 
     if (action === 'approve') {
       // Update nomination to approved

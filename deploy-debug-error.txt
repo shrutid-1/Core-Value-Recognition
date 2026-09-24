@@ -1,0 +1,17 @@
+
+
+NotFound: FileSystem.readFile (C:\Users\Shruti D\.supabase\profile)
+Using access token for profile: supabase
+Supabase CLI 2.117.0
+Using profile: supabase (supabase.co)
+Using access token for profile: supabase
+failed to read config: CliConfigParseError
+
+
+Command failed: supabase functions deploy provision-employees --debug
+NotFound: FileSystem.readFile (C:\Users\Shruti D\.supabase\profile)
+Using access token for profile: supabase
+Supabase CLI 2.117.0
+Using profile: supabase (supabase.co)
+Using access token for profile: supabase
+failed to read config: CliConfigParseError

@@ -37,7 +37,7 @@ export default function PendingApprovalsPage() {
     setLoading(true)
     try {
       const data = await fetchNominationsWithDetailsForApproval({
-        status: 'pending',
+        status: ['pending', 'resubmitted'],
         assignedApproverId: employee.id,
       })
       setNominations(data)
@@ -172,6 +172,24 @@ export default function PendingApprovalsPage() {
                       gap: 12,
                     }}
                   >
+                    {/* Resubmitted indicator */}
+                    {n.status === 'resubmitted' && (
+                      <div
+                        style={{
+                          paddingTop: 12,
+                          padding: '10px 12px',
+                          border: '1px solid var(--color-accent-400)',
+                          background: 'color-mix(in srgb, var(--color-accent) 8%, var(--color-bg))',
+                          fontSize: 12,
+                          color: 'var(--color-accent-800)',
+                          borderRadius: 4,
+                        }}
+                      >
+                        <p style={{ fontWeight: 600, marginBottom: 3 }}>⟳ Recognition resubmitted</p>
+                        <p>The nominator has provided additional clarification in response to your request.</p>
+                      </div>
+                    )}
+
                     {/* Core Value badge (mobile) */}
                     {cv && <div className="sm:hidden" style={{ paddingTop: 12 }}><CoreValueBadge name={cv.name} slug={cv.slug} /></div>}
 
@@ -201,6 +219,65 @@ export default function PendingApprovalsPage() {
                       <p style={{ fontSize: 12, color: 'var(--color-neutral-600)' }}>
                         Behaviour: <strong style={{ color: 'var(--color-text)' }}>{n.snapshot_behaviour_name}</strong>
                       </p>
+                    )}
+
+                    {/* Clarification history (if resubmitted) */}
+                    {n.status === 'resubmitted' && n.clarification_note && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            border: '1px solid var(--color-accent-300)',
+                            background: 'color-mix(in srgb, var(--color-accent) 4%, transparent)',
+                            borderRadius: 4,
+                          }}
+                        >
+                          <p className="vs-kicker" style={{ fontSize: 11, color: 'var(--color-neutral-600)', marginBottom: 4 }}>
+                            Your clarification request:
+                          </p>
+                          <p style={{ fontSize: 12, color: 'var(--color-text)', lineHeight: 1.5 }}>
+                            {n.clarification_note}
+                          </p>
+                        </div>
+                        
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            border: '1px solid var(--color-success)',
+                            background: 'color-mix(in srgb, var(--color-success) 5%, transparent)',
+                            borderRadius: 4,
+                          }}
+                        >
+                          <p className="vs-kicker" style={{ fontSize: 11, color: 'var(--color-neutral-600)', marginBottom: 4 }}>
+                            Nominator's response:
+                          </p>
+                          <p style={{ fontSize: 12, color: 'var(--color-text)', lineHeight: 1.5 }}>
+                            {n.clarification_responded_at && (
+                              <span style={{ display: 'block', fontSize: 11, color: 'var(--color-neutral-600)', marginBottom: 4 }}>
+                                Submitted {formatIST(n.clarification_responded_at)}
+                              </span>
+                            )}
+                            <em>{n.snapshot_behaviour_name ? '(Response will be fetched from clarification_responses table)' : ''}</em>
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Original clarification request (if still clarification_requested status) */}
+                    {n.status === 'clarification_requested' && n.clarification_note && (
+                      <div
+                        style={{
+                          padding: '10px 12px',
+                          border: '1px solid var(--color-accent-400)',
+                          background: 'color-mix(in srgb, var(--color-accent) 6%, var(--color-bg))',
+                          fontSize: 12,
+                          color: 'var(--color-accent-800)',
+                          borderRadius: 4,
+                        }}
+                      >
+                        <p style={{ fontWeight: 600, marginBottom: 3 }}>Clarification needed</p>
+                        <p>{n.clarification_note}</p>
+                      </div>
                     )}
 
                     {/* Action buttons */}

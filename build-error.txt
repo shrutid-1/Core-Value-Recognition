@@ -1,0 +1,10 @@
+STDOUT:
+
+> touchcore-valuespot@1.0.0 build
+> tsc -b && vite build
+
+src/pages/auth/ResetPasswordPage.tsx(38,9): error TS6133: 'navigate' is declared but its value is never read.
+src/pages/auth/ResetPasswordPage.tsx(51,43): error TS6133: 'sessionError' is declared but its value is never read.
+
+
+STDERR:

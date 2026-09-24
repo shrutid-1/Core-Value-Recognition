@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Award, Send } from 'lucide-react'
+import { Award, Send, MessageSquare } from 'lucide-react'
 import { fetchNominationsWithDetails } from '@/lib/db-queries'
 import { useAuth } from '@/context/AuthContext'
 import type { NominationWithJoins } from '@/types'
@@ -8,6 +8,7 @@ import { CardSkeleton } from '@/components/shared/SkeletonLoader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { CoreValueBadge } from '@/components/shared/CoreValueBadge'
 import { EmployeeAvatar } from '@/components/shared/EmployeeAvatar'
+import { RespondToClarificationModal } from '@/components/recognition/RespondToClarificationModal'
 import { formatIST } from '@/lib/date-utils'
 import { useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/lib/constants'
@@ -18,6 +19,7 @@ const STATUS_STYLE: Record<string, { label: string; variant: 'accent' | 'neutral
   approved:                { label: 'Published',            variant: 'accent'   },
   pending:                 { label: 'Pending approval',     variant: 'neutral'  },
   clarification_requested: { label: 'Clarification needed', variant: 'outline'  },
+  resubmitted:             { label: 'Resubmitted',          variant: 'outline'  },
   rejected:                { label: 'Not approved',         variant: 'neutral'  },
   draft:                   { label: 'Draft',                variant: 'neutral'  },
 }
@@ -28,6 +30,7 @@ export default function MyRecognitionsPage() {
   const [tab, setTab]       = useState<Tab>('received')
   const [items, setItems]   = useState<NominationWithJoins[]>([])
   const [loading, setLoading] = useState(true)
+  const [clarificationModal, setClarificationModal] = useState<NominationWithJoins | null>(null)
 
   useEffect(() => {
     if (!employee) return
@@ -35,7 +38,7 @@ export default function MyRecognitionsPage() {
 
     const statusFilter = tab === 'received'
       ? ['approved']
-      : ['approved', 'pending', 'clarification_requested', 'rejected']
+      : ['approved', 'pending', 'clarification_requested', 'resubmitted', 'rejected']
 
     const getItems = async () => {
       try {
@@ -183,10 +186,56 @@ export default function MyRecognitionsPage() {
                     <p>{n.clarification_note}</p>
                   </div>
                 )}
+
+                {/* Action button for clarification_requested recognitions */}
+                {n.status === 'clarification_requested' && tab === 'given' && (
+                  <button
+                    onClick={() => setClarificationModal(n)}
+                    className="vs-btn vs-btn-primary relative"
+                    style={{
+                      marginTop: 8,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <i className="corner tl" /><i className="corner tr" /><i className="corner bl" /><i className="corner br" />
+                    <MessageSquare size={13} aria-hidden="true" /> Respond to Clarification
+                  </button>
+                )}
               </article>
             )
           })}
         </div>
+      )}
+
+      {/* Clarification Response Modal */}
+      {clarificationModal && (
+        <RespondToClarificationModal
+          nomination={clarificationModal}
+          onClose={() => setClarificationModal(null)}
+          onSuccess={() => {
+            // Refresh the list after successful submission
+            const getItems = async () => {
+              try {
+                const statusFilter = tab === 'received'
+                  ? ['approved']
+                  : ['approved', 'pending', 'clarification_requested', 'resubmitted', 'rejected']
+                const data = await fetchNominationsWithDetails({
+                  status: statusFilter,
+                  limit: 50,
+                })
+                const filtered = tab === 'received'
+                  ? data.filter(n => n.nominee_id === employee?.id)
+                  : data.filter(n => n.nominator_id === employee?.id)
+                setItems(filtered)
+              } catch (err) {
+                console.error('Failed to refresh recognitions:', err)
+              }
+            }
+            getItems()
+          }}
+        />
       )}
     </div>
   )

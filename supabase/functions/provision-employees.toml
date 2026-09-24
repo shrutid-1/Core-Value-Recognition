@@ -1,0 +1,5 @@
+# Configuration for provision-employees Edge Function
+# This disables JWT verification at the gateway level to allow OPTIONS preflight
+# JWT validation is still performed inside the function handler
+
+verify_jwt = false

@@ -37,6 +37,7 @@ export type AuditLog            = Database['public']['Tables']['audit_logs']['Ro
 export type AppConfig           = Database['public']['Tables']['app_config']['Row']
 export type Reward              = Database['public']['Tables']['rewards']['Row']
 export type RewardAssignment    = Database['public']['Tables']['reward_assignments']['Row']
+export type ClarificationResponse = Database['public']['Tables']['clarification_responses']['Row']
 
 // === View types ===
 export type RecognitionFeedItem = Database['public']['Views']['v_recognition_feed']['Row']
